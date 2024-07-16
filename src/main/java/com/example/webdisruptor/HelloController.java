@@ -4,6 +4,8 @@ import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -50,10 +52,27 @@ public class HelloController {
 
     @GetMapping("/products")
     public Map<Long, Long> products(@RequestParam List<Long> ids) {
-        Map<Long, Long> result = new HashMap<>();
+        Map<Long, Long> items = new HashMap<>();
         for (Long id: ids) {
-            result.put(id, Database.instance.getOrDefault(id, 0L));
+            items.put(id, Database.instance.getOrDefault(id, 0L));
         }
-        return result;
+        return items;
+    }
+
+    @PostMapping("/products")
+    public String buyProducts(@RequestBody Map<Long, Long> items) {
+        CompletableFuture<String> result = new CompletableFuture<>();
+
+        inputRingBuffer.publishEvent((event, seq, eventItems, eventResult) -> {
+            System.out.println("public event at seq = " + seq);
+            event.setItems(eventItems);
+            event.setResponse(eventResult);
+        }, items, result);
+
+        try {
+            return result.get();
+        } catch (Exception e) {
+            return e.getMessage();
+        }
     }
 }

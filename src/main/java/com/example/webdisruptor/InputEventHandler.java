@@ -3,14 +3,14 @@ package com.example.webdisruptor;
 import com.lmax.disruptor.EventHandler;
 
 import javax.xml.crypto.Data;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class InputEventHandler implements EventHandler<InputEvent> {
 
     @Override
     public void onEvent(InputEvent inputEvent, long l, boolean b) throws Exception {
-        Thread.sleep(10_000L);
         if (inputEvent.getItems() == null || inputEvent.getResponse() == null) {
-            System.out.println("handler run in: " + Thread.currentThread());
+            //nothing to do, just return
             return;
         }
         try {
@@ -24,7 +24,7 @@ public class InputEventHandler implements EventHandler<InputEvent> {
             //update db
             for (var entry: inputEvent.getItems().entrySet()) {
                 Long currentQuantity = Database.instance.getOrDefault(entry.getKey(), 0L);
-                Database.instance.put(entry.getKey(), entry.getValue() - currentQuantity);
+                Database.instance.put(entry.getKey(), currentQuantity - entry.getValue());
             }
             inputEvent.getResponse().complete("Order is created");
         } catch (Exception ex) {
