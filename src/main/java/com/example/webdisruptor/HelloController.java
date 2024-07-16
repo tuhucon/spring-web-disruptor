@@ -1,5 +1,7 @@
 package com.example.webdisruptor;
 
+import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.dsl.Disruptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,7 +19,14 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class HelloController {
 
-    private final Map<Long, Long> database;
+    private final RingBuffer<InputEvent> inputRingBuffer;
+
+    @GetMapping("/publish")
+    public String publicEvent() {
+        inputRingBuffer.publishEvent((t, s) ->
+                System.out.println(String.format("public event %s with sequence %d in thread %s", t.toString(), s, Thread.currentThread().toString())));
+        return "OK";
+    }
 
     @GetMapping("/hello")
     public String hello() throws ExecutionException, InterruptedException {
@@ -43,7 +52,7 @@ public class HelloController {
     public Map<Long, Long> products(@RequestParam List<Long> ids) {
         Map<Long, Long> result = new HashMap<>();
         for (Long id: ids) {
-            result.put(id, database.getOrDefault(id, 0L));
+            result.put(id, Database.instance.getOrDefault(id, 0L));
         }
         return result;
     }
