@@ -28,7 +28,6 @@ public class InputEventHandler implements EventHandler<InputEvent> {
             }
             inputEvent.getResponse().complete("Order is created");
         } catch (Exception ex) {
-            System.out.println(ex);
             inputEvent.getResponse().completeExceptionally(ex);
         } finally {
             inputEvent.clear();

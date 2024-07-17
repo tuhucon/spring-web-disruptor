@@ -59,8 +59,8 @@ public class HelloController {
         return items;
     }
 
-    @PostMapping("/products")
-    public String buyProducts(@RequestBody Map<Long, Long> items) {
+    @PostMapping("/products/disruptor")
+    public String buyProductsWithDisruptor(@RequestBody Map<Long, Long> items) {
         CompletableFuture<String> result = new CompletableFuture<>();
 
         inputRingBuffer.publishEvent((event, seq, eventItems, eventResult) -> {
@@ -74,5 +74,38 @@ public class HelloController {
         } catch (Exception e) {
             return e.getMessage();
         }
+    }
+    @PostMapping("/products/lock")
+    public String buyProductsWithLock(@RequestBody Map<Long, Long> items) {
+        Map<Long, Long> processedItems = new HashMap<>();
+        boolean[] errors = { false };
+        //process items
+        for (var entry: items.entrySet()) {
+            if (Database.instance.getOrDefault(entry.getKey(), 0L) < entry.getValue()) {
+                errors[0] = true;
+                break;
+            }
+            Database.instance.computeIfPresent(entry.getKey(), (k, v) -> {
+                if (v < entry.getValue()) {
+                    errors[0] = true;
+                    return v;
+                } else {
+                    return  v - entry.getValue();
+                }
+            });
+            if (errors[0] == false) {
+                processedItems.put(entry.getKey(), entry.getValue());
+            } else {
+                break;
+            }
+        }
+        // if error, compensate
+        if (errors[0]) {
+            for (var entry: processedItems.entrySet()) {
+                Database.instance.computeIfPresent(entry.getKey(), (k, v) -> v + entry.getValue());
+            }
+            return processedItems.toString();
+        }
+        return "OK";
     }
 }

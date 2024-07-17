@@ -8,6 +8,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 @SpringBootApplication
 public class WebDisruptorApplication {
 
@@ -18,7 +20,7 @@ public class WebDisruptorApplication {
     @PostConstruct
     private void initDatabase() {
         for (int i = 1; i < 1_000_000; i++) {
-            Database.instance.put((long) i, 1_000_000_000L);//ThreadLocalRandom.current().nextLong(20L));
+            Database.instance.put((long) i, 1_000_000_000L); //ThreadLocalRandom.current().nextLong(20L));
         }
     }
 
